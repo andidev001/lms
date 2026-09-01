@@ -1,0 +1,34 @@
+// Body
+$body-bg: #f8f8f8;
+$body-color: #5e5873;
+
+// Theme Colors
+$primary: #7367f0;
+$secondary: #82868b;
+$success: #28c76f;
+$info: #00cfe8;
+$warning: #ff9f43;
+$danger: #ea5455;
+$light: #f6f6f6;
+$dark: #4b4b4b;
+
+// Typography
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
+$font-family-sans-serif: 'Public Sans', sans-serif;
+$font-size-base: 0.9375rem;
+$line-height-base: 1.45;
+
+// Cards
+$card-border-radius: 0.428rem;
+$card-border-width: 0;
+$card-box-shadow: 0 4px 24px 0 rgba(34, 41, 47, 0.1);
+$card-cap-bg: transparent;
+
+// Buttons
+$btn-border-radius: 0.358rem;
+
+// Modals
+$modal-content-border-radius: 0.428rem;
+$modal-content-border-width: 0;
+$modal-content-box-shadow-xs: 0 5px 20px 0 rgba(34, 41, 47, 0.1);
+
