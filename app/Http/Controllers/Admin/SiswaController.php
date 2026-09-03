@@ -236,10 +236,10 @@ class SiswaController extends Controller
         $email = str_replace(' ', '', $siswa->nis) . '@lms.com';
         $password = $siswa->nis;
 
-        // Check if email already exists
+        // Check if email already exists (including soft deleted models)
         $originalEmail = $email;
         $counter = 1;
-        while (User::where('email', $email)->exists()) {
+        while (\Illuminate\Support\Facades\DB::table('users')->where('email', $email)->exists()) {
             $email = str_replace('@lms.com', $counter . '@lms.com', $originalEmail);
             $counter++;
         }
@@ -271,10 +271,10 @@ class SiswaController extends Controller
         foreach ($siswas as $siswa) {
             $email = str_replace(' ', '', $siswa->nis) . '@lms.com';
 
-            // Generate unique email if it exists
+            // Generate unique email if it exists (including soft deleted models)
             $originalEmail = $email;
             $counter = 1;
-            while (User::where('email', $email)->exists()) {
+            while (\Illuminate\Support\Facades\DB::table('users')->where('email', $email)->exists()) {
                 $email = str_replace('@lms.com', $counter . '@lms.com', $originalEmail);
                 $counter++;
             }
