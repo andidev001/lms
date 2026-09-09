@@ -59,15 +59,16 @@ class MateriSiswaController extends Controller
             $activeMateri = $materis->where('id', $request->materi_id)->first();
         }
 
-        // Jika tidak ada parameter materi_id atau invalid, pilih materi pertama yang belum selesai
+        // Jika tidak ada parameter materi_id atau invalid, pilih materi pertama yang belum selesai (yang masih aktif / belum expired)
         if (!$activeMateri) {
             foreach ($materis as $m) {
-                if (!isset($progress[$m->id]) || !$progress[$m->id]->is_completed) {
+                $isExpired = $m->tenggat_waktu && now()->gt($m->tenggat_waktu);
+                if ((!isset($progress[$m->id]) || !$progress[$m->id]->is_completed) && !$isExpired) {
                     $activeMateri = $m;
                     break;
                 }
             }
-            // Jika semuanya selesai, pilih materi terakhir
+            // Jika semua sudah mandeg (expired/selesai), pilih materi terakhir
             if (!$activeMateri && $materis->count() > 0) {
                 $activeMateri = $materis->last();
             }
@@ -85,27 +86,10 @@ class MateriSiswaController extends Controller
         $mapel = Mapel::findOrFail($mapel_id);
         $materi = Materi::where('mapel_id', $mapel_id)->findOrFail($materi_id);
 
-        // Sequential validation: Cek apakah materi sebelumnya sudah selesai
-        $previousMateri = Materi::where('mapel_id', $mapel_id)
-            ->where('urutan', '<', $materi->urutan)
-            ->orderBy('urutan', 'desc')
-            ->first();
-
         // Cek tenggat waktu
         if ($materi->tenggat_waktu && now()->gt($materi->tenggat_waktu)) {
             return redirect()->route('siswa.mapels.show', $mapel_id)
                 ->with('error', 'Waktu akses untuk materi ini sudah berakhir.');
-        }
-
-        if ($previousMateri) {
-            $prevProgress = SiswaProgress::where('siswa_id', $siswa->id)
-                ->where('materi_id', $previousMateri->id)
-                ->first();
-
-            if (!$prevProgress || !$prevProgress->is_completed) {
-                return redirect()->route('siswa.mapels.show', $mapel_id)
-                    ->with('error', 'Anda harus menyelesaikan materi sebelumnya terlebih dahulu.');
-            }
         }
 
         // Ambil atau buat progress baru

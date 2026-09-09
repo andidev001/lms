@@ -27,32 +27,28 @@
             @php
                 $isActive = $activeMateri && $activeMateri->id == $materi->id;
                 $isCompleted = isset($progress[$materi->id]) && $progress[$materi->id]->is_completed;
-                $isLocked = false;
-                
-                // Cek sequential (terkunci jika modul sebelumnya belum selesai)
-                if ($index > 0) {
-                    $prevMateriId = $materis[$index - 1]->id;
-                    $isLocked = !isset($progress[$prevMateriId]) || !$progress[$prevMateriId]->is_completed;
-                }
+                $materiExpired = $materi->tenggat_waktu && \Carbon\Carbon::now()->gt(\Carbon\Carbon::parse($materi->tenggat_waktu));
             @endphp
             <div class="card border {{ $isActive ? 'border-primary shadow-sm bg-primary bg-opacity-10' : 'border-light shadow-sm mb-3' }} rounded-4 mb-3 transition-all hover-shadow">
                 <div class="card-body p-4 position-relative">
-                    @if($isLocked)
-                        <div class="position-absolute top-0 end-0 p-3 text-muted">
-                            <i class="bi bi-lock-fill fs-5"></i>
+                    @if($materiExpired && !$isCompleted)
+                        <div class="position-absolute top-0 end-0 p-3 text-danger">
+                            <i class="bi bi-clock-history fs-5" title="Waktu Habis"></i>
                         </div>
                     @endif
                     <div class="d-flex align-items-start gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0 {{ $isCompleted ? 'bg-success' : ($isLocked ? 'bg-secondary' : 'bg-primary') }}" style="width: 35px; height: 35px;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0 {{ $isCompleted ? 'bg-success' : ($materiExpired ? 'bg-danger' : 'bg-primary') }}" style="width: 35px; height: 35px;">
                             @if($isCompleted)
                                 <i class="bi bi-check-lg fs-5"></i>
+                            @elseif($materiExpired)
+                                <i class="bi bi-x-lg fs-5"></i>
                             @else
                                 <span class="fw-bold">{{ $materi->urutan }}</span>
                             @endif
                         </div>
                         <div>
                             <span class="text-muted small d-block mb-1">Modul {{ $materi->urutan }}</span>
-                            <h6 class="fw-bold mb-2 {{ $isLocked ? 'text-muted' : 'text-dark' }}">{{ $materi->judul }}</h6>
+                            <h6 class="fw-bold mb-2 {{ ($materiExpired && !$isCompleted) ? 'text-muted text-decoration-line-through' : 'text-dark' }}">{{ $materi->judul }}</h6>
                             <div class="d-flex align-items-center gap-3 text-muted small mb-3">
                                 @if($materi->url_youtube)
                                 <span><i class="bi bi-play-circle me-1"></i> Video</span>
@@ -62,8 +58,9 @@
                                 @endif
                             </div>
                             
-                            @if($isLocked)
-                                <button class="btn btn-sm btn-secondary rounded-pill px-3 py-1 fw-semibold disabled" style="font-size: 0.8rem;">Terkunci</button>
+                            @if($materiExpired && !$isCompleted)
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold disabled" style="font-size: 0.8rem;">Waktu Habis</button>
+                                <a href="{{ route('siswa.mapels.show', ['mapel' => $mapel->id, 'materi_id' => $materi->id]) }}" class="btn btn-sm btn-link text-muted px-1" style="font-size: 0.8rem;">Buka Detail Biasa</a>
                             @else
                                 <a href="{{ route('siswa.mapels.show', ['mapel' => $mapel->id, 'materi_id' => $materi->id]) }}" class="btn btn-sm {{ $isActive ? 'btn-primary' : 'btn-outline-primary' }} rounded-pill px-3 py-1 fw-semibold" style="font-size: 0.8rem;">
                                     {{ $isCompleted ? 'Pelajari Ulang' : 'Pelajari Materi' }}
