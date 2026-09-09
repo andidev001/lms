@@ -91,7 +91,8 @@
                 $needsVideo = $activeMateri->url_youtube ? !($activeProgress && $activeProgress->video_ditonton) : false;
                 $needsRefleksi = !($activeProgress && !empty($activeProgress->cerita_reflektif));
                 
-                $canTakePretest = !$needsPdf && !$needsVideo && !$needsRefleksi;
+                $isExpired = $activeMateri->tenggat_waktu && \Carbon\Carbon::now()->gt(\Carbon\Carbon::parse($activeMateri->tenggat_waktu));
+                $canTakePretest = !$needsPdf && !$needsVideo && !$needsRefleksi && !$isExpired;
             @endphp
 
             @if ($message = Session::get('error'))
@@ -212,7 +213,11 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-play-btn-fill fs-5 text-dark"></i>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#videoModal" class="text-primary text-decoration-none fw-semibold hover-underline">Video Pembelajaran</a>
+                                            @if($isExpired)
+                                                <span class="text-muted fw-semibold"><i class="bi bi-lock-fill me-1"></i>Video Pembelajaran (Terkunci)</span>
+                                            @else
+                                                <a href="#" data-bs-toggle="modal" data-bs-target="#videoModal" class="text-primary text-decoration-none fw-semibold hover-underline">Video Pembelajaran</a>
+                                            @endif
                                         </div>
                                     </li>
                                     
@@ -265,7 +270,11 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-file-earmark-pdf-fill fs-5 text-dark"></i>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#pdfModal" class="text-primary text-decoration-none fw-semibold hover-underline">Dokumen Materi</a>
+                                            @if($isExpired)
+                                                <span class="text-muted fw-semibold"><i class="bi bi-lock-fill me-1"></i>Dokumen Materi (Terkunci)</span>
+                                            @else
+                                                <a href="#" data-bs-toggle="modal" data-bs-target="#pdfModal" class="text-primary text-decoration-none fw-semibold hover-underline">Dokumen Materi</a>
+                                            @endif
                                         </div>
                                     </li>
 
@@ -312,6 +321,10 @@
                                         @if($activeProgress && !empty($activeProgress->cerita_reflektif))
                                             <div class="bg-light bg-opacity-50 p-3 rounded-3 border">
                                                 <p class="mb-0 text-dark">{{ $activeProgress->cerita_reflektif }}</p>
+                                            </div>
+                                        @elseif($isExpired)
+                                            <div class="border rounded-3 p-3 bg-light text-muted small">
+                                                <i class="bi bi-lock-fill me-1"></i> Waktu telah berakhir, Anda tidak dapat mengisi refleksi lagi.
                                             </div>
                                         @else
                                             <form action="{{ route('siswa.mapels.materis.mark', [$mapel->id, $activeMateri->id]) }}" method="POST">
@@ -367,7 +380,11 @@
                     @if(!$canTakePretest)
                     <div class="bg-secondary bg-opacity-10 rounded-bottom-4 px-4 py-3 d-flex align-items-center gap-2 mt-n2 position-relative" style="z-index: -1;">
                         <i class="bi bi-lock-fill text-secondary"></i>
-                        <span class="text-secondary small">Pelajari materi di atas terlebih dahulu</span>
+                        @if($isExpired)
+                            <span class="text-secondary small">Waktu pengerjaan materi telah berakhir</span>
+                        @else
+                            <span class="text-secondary small">Pelajari materi di atas terlebih dahulu</span>
+                        @endif
                     </div>
                     @endif
                 </div>

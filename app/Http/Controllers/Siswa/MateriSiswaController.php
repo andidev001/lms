@@ -46,29 +46,29 @@ class MateriSiswaController extends Controller
         }
 
         $materis = Materi::where('mapel_id', $mapel_id)->orderBy('urutan', 'asc')->get();
-        
+
         // Ambil progress siswa
         $progress = SiswaProgress::where('siswa_id', $siswa->id)
-                                 ->whereIn('materi_id', $materis->pluck('id'))
-                                 ->get()
-                                 ->keyBy('materi_id');
+            ->whereIn('materi_id', $materis->pluck('id'))
+            ->get()
+            ->keyBy('materi_id');
 
         // Tentukan materi aktif di kolom kanan
         $activeMateri = null;
         if ($request->has('materi_id')) {
             $activeMateri = $materis->where('id', $request->materi_id)->first();
-        } 
-        
+        }
+
         // Jika tidak ada parameter materi_id atau invalid, pilih materi pertama yang belum selesai
         if (!$activeMateri) {
-            foreach($materis as $m) {
-                if(!isset($progress[$m->id]) || !$progress[$m->id]->is_completed) {
+            foreach ($materis as $m) {
+                if (!isset($progress[$m->id]) || !$progress[$m->id]->is_completed) {
                     $activeMateri = $m;
                     break;
                 }
             }
             // Jika semuanya selesai, pilih materi terakhir
-            if(!$activeMateri && $materis->count() > 0) {
+            if (!$activeMateri && $materis->count() > 0) {
                 $activeMateri = $materis->last();
             }
         }
@@ -87,18 +87,24 @@ class MateriSiswaController extends Controller
 
         // Sequential validation: Cek apakah materi sebelumnya sudah selesai
         $previousMateri = Materi::where('mapel_id', $mapel_id)
-                                ->where('urutan', '<', $materi->urutan)
-                                ->orderBy('urutan', 'desc')
-                                ->first();
+            ->where('urutan', '<', $materi->urutan)
+            ->orderBy('urutan', 'desc')
+            ->first();
+
+        // Cek tenggat waktu
+        if ($materi->tenggat_waktu && now()->gt($materi->tenggat_waktu)) {
+            return redirect()->route('siswa.mapels.show', $mapel_id)
+                ->with('error', 'Waktu akses untuk materi ini sudah berakhir.');
+        }
 
         if ($previousMateri) {
             $prevProgress = SiswaProgress::where('siswa_id', $siswa->id)
-                                         ->where('materi_id', $previousMateri->id)
-                                         ->first();
-            
+                ->where('materi_id', $previousMateri->id)
+                ->first();
+
             if (!$prevProgress || !$prevProgress->is_completed) {
                 return redirect()->route('siswa.mapels.show', $mapel_id)
-                                 ->with('error', 'Anda harus menyelesaikan materi sebelumnya terlebih dahulu.');
+                    ->with('error', 'Anda harus menyelesaikan materi sebelumnya terlebih dahulu.');
             }
         }
 
@@ -116,6 +122,11 @@ class MateriSiswaController extends Controller
      */
     public function markProgress(Request $request, $mapel_id, $materi_id)
     {
+        $materi = Materi::findOrFail($materi_id);
+        if ($materi->tenggat_waktu && now()->gt($materi->tenggat_waktu)) {
+            return redirect()->route('siswa.mapels.show', ['mapel' => $mapel_id, 'materi_id' => $materi_id])->with('error', 'Waktu akses untuk materi ini sudah berakhir.');
+        }
+
         $siswa = Auth::user()->siswa;
         $progress = SiswaProgress::firstOrCreate([
             'siswa_id' => $siswa->id,
@@ -131,14 +142,13 @@ class MateriSiswaController extends Controller
         if ($request->has('cerita_reflektif')) {
             $progress->cerita_reflektif = $request->cerita_reflektif;
         }
-        
+
         // Jika materi tidak punya soal pretest, langsung bisa ditandai completed jika ketiganya (yang ada) terpenuhi
-        $materi = Materi::findOrFail($materi_id);
         if ($materi->pretest_questions()->count() == 0) {
             $needsPdf = $materi->file_pdf ? $progress->pdf_dibaca : true;
             $needsVideo = $materi->url_youtube ? $progress->video_ditonton : true;
-            $needsRefleksi = !empty($progress->cerita_reflektif) || $request->has('cerita_reflektif'); 
-            
+            $needsRefleksi = !empty($progress->cerita_reflektif) || $request->has('cerita_reflektif');
+
             // Anggap cerita reflektif itu wajib jika tidak ada pretest. Wait, mari kita buat reflektif opsional untuk unlock jika tidak wajib, tapi krn user minta ditambahkan, mari kita cek jika isian reflektif ada.
             // Sebenarnya jika tidak ada Pre-Test, maka cukup lengkapi baca dan tonton. Cerita reflektif disimpan saja.
             if ($needsPdf && $needsVideo && !empty($progress->cerita_reflektif)) {
@@ -159,6 +169,12 @@ class MateriSiswaController extends Controller
         $siswa = Auth::user()->siswa;
         $mapel = Mapel::findOrFail($mapel_id);
         $materi = Materi::with('pretest_questions')->where('mapel_id', $mapel_id)->findOrFail($materi_id);
+
+        if ($materi->tenggat_waktu && now()->gt($materi->tenggat_waktu)) {
+            return redirect()->route('siswa.mapels.show', $mapel_id)
+                ->with('error', 'Waktu Post-Test untuk materi ini sudah berakhir.');
+        }
+
         $progress = SiswaProgress::where('siswa_id', $siswa->id)->where('materi_id', $materi_id)->firstOrFail();
 
         // Validasi: Harus sudah baca PDF, Tonton video, dan isi reflektif jika tersedia
@@ -174,7 +190,7 @@ class MateriSiswaController extends Controller
 
         if ($progress->is_completed && $progress->pretest_nilai !== null) {
             return redirect()->route('siswa.mapels.show', $mapel_id)
-                             ->with('info', 'Anda sudah menyelesaikan pre-test ini dengan nilai: ' . $progress->pretest_nilai);
+                ->with('info', 'Anda sudah menyelesaikan pre-test ini dengan nilai: ' . $progress->pretest_nilai);
         }
 
         return view('siswa.belajar.pretest', compact('mapel', 'materi', 'progress'));
@@ -187,6 +203,12 @@ class MateriSiswaController extends Controller
     {
         $siswa = Auth::user()->siswa;
         $materi = Materi::with('pretest_questions')->findOrFail($materi_id);
+
+        if ($materi->tenggat_waktu && now()->gt($materi->tenggat_waktu)) {
+            return redirect()->route('siswa.mapels.show', $mapel_id)
+                ->with('error', 'Waktu pengerjaan Post-Test untuk materi ini sudah berakhir.');
+        }
+
         $progress = SiswaProgress::where('siswa_id', $siswa->id)->where('materi_id', $materi_id)->firstOrFail();
 
         $totalQuestions = $materi->pretest_questions->count();
@@ -209,6 +231,6 @@ class MateriSiswaController extends Controller
         $progress->save();
 
         return redirect()->route('siswa.mapels.show', $mapel_id)
-                         ->with('success', 'Selamat! Anda menyelesaikan materi ini. Nilai Post-Test Anda: ' . $score);
+            ->with('success', 'Selamat! Anda menyelesaikan materi ini. Nilai Post-Test Anda: ' . $score);
     }
 }
