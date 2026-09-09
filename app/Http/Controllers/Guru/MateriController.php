@@ -66,7 +66,7 @@ class MateriController extends Controller
         $materi->deskripsi = $request->deskripsi;
         $materi->urutan = $lastUrutan + 1;
         $materi->url_youtube = $request->url_youtube;
-        $materi->tenggat_waktu = $request->tenggat_waktu;
+        $materi->tenggat_waktu = $request->filled('tenggat_waktu') ? $request->tenggat_waktu : null;
 
         if ($request->hasFile('file_pdf')) {
             $pdfPath = $request->file('file_pdf')->store('materi_pdfs', 'public');
@@ -130,7 +130,7 @@ class MateriController extends Controller
         $materi->judul = $request->judul;
         $materi->deskripsi = $request->deskripsi;
         $materi->url_youtube = $request->url_youtube;
-        $materi->tenggat_waktu = $request->tenggat_waktu;
+        $materi->tenggat_waktu = $request->filled('tenggat_waktu') ? $request->tenggat_waktu : null;
 
         if ($request->hasFile('file_pdf')) {
             // Hapus file lama jika ada
