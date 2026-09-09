@@ -119,11 +119,23 @@
                 <div class="card-body p-4">
                     <span class="text-muted small fw-bold text-uppercase mb-2 d-block">MODUL</span>
                     <h4 class="fw-bold text-dark mb-3">{{ $activeMateri->judul }}</h4>
-                    <div class="d-flex align-items-center mb-0">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
-                            <i class="bi bi-building" style="font-size: 0.7rem;"></i>
+                    <div class="d-flex align-items-center mb-0 gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
+                                <i class="bi bi-person-fill" style="font-size: 0.9rem;"></i>
+                            </div>
+                            <span class="text-muted small">Disusun oleh {{ $mapel->guru_pengampu->nama ?? 'Guru ' . $mapel->nama_mapel }}</span>
                         </div>
-                        <span class="text-muted small">Disusun oleh {{ $mapel->guru_pengampu->nama ?? 'Guru ' . $mapel->nama_mapel }}</span>
+                        @if($activeMateri->tenggat_waktu)
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-2 border border-warning" style="width: 24px; height: 24px;">
+                                <i class="bi bi-clock-history text-dark" style="font-size: 0.9rem;"></i>
+                            </div>
+                            <span class="text-{{ \Carbon\Carbon::now()->gt(\Carbon\Carbon::parse($activeMateri->tenggat_waktu)) ? 'danger' : 'muted' }} small">
+                                Berakhir: {{ \Carbon\Carbon::parse($activeMateri->tenggat_waktu)->format('d M Y, H:i') }}
+                            </span>
+                        </div>
+                        @endif
                     </div>
                     
                     <div class="mt-4">

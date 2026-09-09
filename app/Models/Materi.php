@@ -8,10 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Materi extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'materis';
 
-    protected $fillable = ['mapel_id', 'judul', 'deskripsi', 'urutan', 'file_pdf', 'url_youtube'];
+    protected $fillable = ['mapel_id', 'judul', 'deskripsi', 'urutan', 'file_pdf', 'url_youtube', 'tenggat_waktu'];
+
+    protected $casts = [
+        'tenggat_waktu' => 'datetime'
+    ];
 
     public function mapel()
     {

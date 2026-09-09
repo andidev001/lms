@@ -17,7 +17,7 @@ class MateriController extends Controller
     public function index($mapel_id)
     {
         $mapel = Mapel::findOrFail($mapel_id);
-        
+
         // Pastikan mapel ini milik guru yang sedang login
         if ($mapel->guru_id != Auth::user()->guru->id) {
             abort(403, 'Unauthorized access.');
@@ -54,6 +54,7 @@ class MateriController extends Controller
             'deskripsi' => 'nullable|string',
             'file_pdf' => 'nullable|mimes:pdf|max:10240', // max 10MB
             'url_youtube' => 'nullable|url',
+            'tenggat_waktu' => 'nullable|date',
         ]);
 
         // Cari urutan terakhir
@@ -65,6 +66,7 @@ class MateriController extends Controller
         $materi->deskripsi = $request->deskripsi;
         $materi->urutan = $lastUrutan + 1;
         $materi->url_youtube = $request->url_youtube;
+        $materi->tenggat_waktu = $request->tenggat_waktu;
 
         if ($request->hasFile('file_pdf')) {
             $pdfPath = $request->file('file_pdf')->store('materi_pdfs', 'public');
@@ -74,7 +76,7 @@ class MateriController extends Controller
         $materi->save();
 
         return redirect()->route('guru.mapels.materis.index', $mapel_id)
-                        ->with('success', 'Materi berhasil ditambahkan.');
+            ->with('success', 'Materi berhasil ditambahkan.');
     }
 
     /**
@@ -88,7 +90,7 @@ class MateriController extends Controller
         }
 
         $materi = Materi::with('pretest_questions')->findOrFail($id);
-        
+
         return view('guru.materi.show', compact('mapel', 'materi'));
     }
 
@@ -121,12 +123,14 @@ class MateriController extends Controller
             'deskripsi' => 'nullable|string',
             'file_pdf' => 'nullable|mimes:pdf|max:10240',
             'url_youtube' => 'nullable|url',
+            'tenggat_waktu' => 'nullable|date',
         ]);
 
         $materi = Materi::findOrFail($id);
         $materi->judul = $request->judul;
         $materi->deskripsi = $request->deskripsi;
         $materi->url_youtube = $request->url_youtube;
+        $materi->tenggat_waktu = $request->tenggat_waktu;
 
         if ($request->hasFile('file_pdf')) {
             // Hapus file lama jika ada
@@ -140,7 +144,7 @@ class MateriController extends Controller
         $materi->save();
 
         return redirect()->route('guru.mapels.materis.index', $mapel_id)
-                        ->with('success', 'Materi berhasil diperbarui.');
+            ->with('success', 'Materi berhasil diperbarui.');
     }
 
     /**
@@ -154,11 +158,11 @@ class MateriController extends Controller
         }
 
         $materi = Materi::findOrFail($id);
-        
+
         if ($materi->file_pdf && Storage::disk('public')->exists($materi->file_pdf)) {
             Storage::disk('public')->delete($materi->file_pdf);
         }
-        
+
         $materi->delete();
 
         // Re-order urutan
@@ -169,6 +173,6 @@ class MateriController extends Controller
         }
 
         return redirect()->route('guru.mapels.materis.index', $mapel_id)
-                        ->with('success', 'Materi berhasil dihapus.');
+            ->with('success', 'Materi berhasil dihapus.');
     }
 }
